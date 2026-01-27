@@ -1,0 +1,5 @@
+model:
+  hidden_dim: 512
+  time_embed_dim: 64
+  depth: 6
+  max_period: 2.0
