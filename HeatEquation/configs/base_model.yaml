@@ -1,0 +1,18 @@
+model:
+  power: 1.0 
+  model_type: "C" # "raw", "C_sqrt" or "C"
+  modes: 16
+  width: 64
+  n_layers: 4
+  timestep_embedding_dim: 64
+  max_period: 2.0
+training:
+  batch_size: 256
+  num_epochs: 5000
+  learning_rate: 1e-4
+sde:
+  beta_min: 0.001
+  beta_max: 20.0
+data:
+  num_points: 128 
+  n_samples: 5000
