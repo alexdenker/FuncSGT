@@ -8,4 +8,4 @@ The important scripts are:
 - **train_sgt.py**: for training the guidance term
 - **evaluate_funDPS.py**: evaluating the FunDPS guidance approximation
 - **evaluate_conditional.py**: evaluate the trained conditional diffusion model
-- **evaluate_sgt.pt**: evaluate the trained guidance term using our SGT framework
+- **evaluate_sgt.py**: evaluate the trained guidance term using our SGT framework
