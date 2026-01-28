@@ -1,9 +1,6 @@
-
-
-
-
 class EMA:
     """Exponential Moving Average of model parameters."""
+
     def __init__(self, model, decay=0.9999, device=None):
         self.model = model
         self.decay = decay
@@ -23,7 +20,9 @@ class EMA:
         for name, param in self.model.named_parameters():
             if param.requires_grad:
                 assert name in self.shadow
-                new_average = (1.0 - self.decay) * param.data + self.decay * self.shadow[name]
+                new_average = (
+                    1.0 - self.decay
+                ) * param.data + self.decay * self.shadow[name]
                 self.shadow[name] = new_average.clone()
 
     def apply_shadow(self):
@@ -44,9 +43,9 @@ class EMA:
 
     def state_dict(self):
         """Return EMA state for saving."""
-        return {'shadow': self.shadow, 'decay': self.decay}
+        return {"shadow": self.shadow, "decay": self.decay}
 
     def load_state_dict(self, state_dict):
         """Load EMA state."""
-        self.shadow = state_dict['shadow']
-        self.decay = state_dict.get('decay', self.decay)
+        self.shadow = state_dict["shadow"]
+        self.decay = state_dict.get("decay", self.decay)

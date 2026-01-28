@@ -1,4 +1,3 @@
-
 import torch
 
 
@@ -11,6 +10,7 @@ def fourier_coefficients(array, num_bases):
     coeffs = torch.stack([complex_coefficients.real, complex_coefficients.imag], axis=1)
     return coeffs
 
+
 def inverse_fourier(coefficients, num_pts):
     """Array of shape [..., 2, num_bases, dim]
     Returns array of shape [..., num_pts, dim]"""
@@ -20,13 +20,15 @@ def inverse_fourier(coefficients, num_pts):
     return torch.fft.irfft(complex_coefficients, norm="forward", n=num_pts, axis=-2)
 
 
-def get_fourier_noise_scales(num_bases, scale_type="inv_k_sq", device="cpu", dtype=torch.float32):
+def get_fourier_noise_scales(
+    num_bases, scale_type="inv_k_sq", device="cpu", dtype=torch.float32
+):
     """
     Compute noise scaling factors for each Fourier basis.
-    
+
     For infinite-dimensional problems, noise should decay with frequency to maintain
     regularity. This function provides proper whitening of the noise covariance.
-    
+
     Args:
         num_bases: Number of Fourier bases (e.g., 16)
         scale_type: Type of scaling
@@ -35,12 +37,12 @@ def get_fourier_noise_scales(num_bases, scale_type="inv_k_sq", device="cpu", dty
             - "uniform": constant (standard i.i.d. noise; not recommended)
         device: torch device
         dtype: torch data type
-    
+
     Returns:
         Tensor of shape [num_bases] with noise scaling factors
     """
     k = torch.arange(num_bases, dtype=dtype, device=device)
-    
+
     if scale_type == "inv_k_sq":
         # 1/(k+1)^2 scaling - good for C^{1/2} regularity
         scales = 1.0 / (k + 1.0) ** 2.0
@@ -52,9 +54,8 @@ def get_fourier_noise_scales(num_bases, scale_type="inv_k_sq", device="cpu", dty
         scales = torch.ones(num_bases, dtype=dtype, device=device)
     else:
         raise ValueError(f"Unknown scale_type: {scale_type}")
-    
+
     # Normalize so that the mean is 1 (for numerical stability)
     scales = scales / scales.mean()
-    
-    return scales
 
+    return scales
