@@ -1,0 +1,45 @@
+[project]
+name = "FuncSGT"
+version = "0.1.0"
+description = "Code for SGT experiments"
+readme = "README.md"
+license = { text = "MIT" }
+
+
+# Classifiers from PyPI
+classifiers = [
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+# Minimum Python version requirement
+requires-python = ">=3.9"
+
+# Dependencies needed for your library
+dependencies = [
+    "torch",
+    "torchvision",
+    "numpy",
+    "matplotlib",
+    "tqdm",
+    "scikit-image",
+    "pyyaml"
+]
+
+[tool.setuptools]
+packages = ["HeatEquation", "ShapeInpainting", "SparseObservations"]
+
+# Optional dependency groups
+[project.optional-dependencies]
+dev = [
+    "black",
+    "isort",
+    "mypy",
+    "pre-commit",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
