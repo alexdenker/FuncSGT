@@ -10,8 +10,11 @@ from noise import SpectralNoiseSampler
 from point_evaluation import Conditioning, PointEvaluationOperator
 from prior import PriorDataset
 from score_model import HtransformModel
-from sde import OU
-from tqdm import tqdm
+from point_evaluation import PointEvaluationOperator, Conditioning
+from ema import EMA 
+
+use_weak_base_model = False # Set to True to use weak base model (epoch 50) instead of EMA model
+use_untrained_base_model = True # Set to True to use untrained base model instead of trained model
 
 with open("configs/forward_op.yaml", "r") as f:
     forward_op_config = yaml.safe_load(f)
@@ -22,11 +25,17 @@ with open("configs/base_model.yaml", "r") as f:
 with open("configs/h_transform.yaml", "r") as f:
     h_transform_config = yaml.safe_load(f)
 
-power = base_model_config["model"]["power"]
-model_type = base_model_config["model"]["model_type"]  # "raw", "C_sqrt", "C"
-cond_model_type = "C_sqrt"  # "raw"
+power = base_model_config['model']['power']
+model_type = base_model_config['model']['model_type']  # "raw", "C_sqrt", "C"
+cond_model_type = "raw" #"C_sqrt" #"raw"
 
-save_path = f"h_transform/model_type={cond_model_type}/alpha={power}/"
+if use_weak_base_model:
+    save_path = f"h_transform_weak/model_type={cond_model_type}/alpha={power}/"
+elif use_untrained_base_model:
+    save_path = f"h_transform_untrained/model_type={cond_model_type}/alpha={power}/"
+else:
+    save_path = f"h_transform/model_type={cond_model_type}/alpha={power}/"
+
 os.makedirs(save_path, exist_ok=True)
 
 save_path_imgs = os.path.join(save_path, "imgs/")
@@ -44,22 +53,18 @@ dataset = PriorDataset(
     n_samples=base_model_config["data"]["n_samples"], n_points=n_points, start_seed=0
 )
 
-model = FNO(
-    modes=base_model_config["model"]["modes"],
-    width=base_model_config["model"]["width"],
-    n_layers=base_model_config["model"]["n_layers"],
-    timestep_embedding_dim=base_model_config["model"]["timestep_embedding_dim"],
-    max_period=base_model_config["model"]["max_period"],
-)
-model.load_state_dict(
-    torch.load(
-        os.path.join(
-            f"unconditional_model_fno/model_type={model_type}/alpha={power}/",
-            "ema_model.pt",
-        ),
-        weights_only=False,
-    )["shadow"]
-)
+model = FNO(modes=base_model_config['model']['modes'], 
+            width=base_model_config['model']['width'], 
+            n_layers=base_model_config['model']['n_layers'], 
+            timestep_embedding_dim=base_model_config['model']['timestep_embedding_dim'], 
+            max_period=base_model_config['model']['max_period'])
+if use_weak_base_model:
+    model.load_state_dict(torch.load(os.path.join(f"unconditional_model_fno/n_points={n_points}/model_type={model_type}/alpha={power}/", "model_epoch_50.pt"), weights_only=False))
+elif use_untrained_base_model:
+    print("Using untrained base model")
+    model.load_state_dict(torch.load(os.path.join(f"unconditional_model_fno/n_points={n_points}/model_type={model_type}/alpha={power}/", "model_init.pt"), weights_only=False))
+else:
+    model.load_state_dict(torch.load(os.path.join(f"unconditional_model_fno/n_points={n_points}/model_type={model_type}/alpha={power}/", "ema_model.pt"), weights_only=False)["shadow"])
 model.to(device)
 model.eval()
 

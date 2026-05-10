@@ -17,27 +17,14 @@ argparse = argparse.ArgumentParser(
     description="Conditional Sampling with Score-Based Model"
 )
 
-# argparse.add_argument('--mask_ratio', type=float, default=0.4, help='Fraction of points to mask')
-argparse.add_argument("--lambd", type=float, default=1.0, help="Guidance strength")
-argparse.add_argument(
-    "--num_samples",
-    type=int,
-    default=200,
-    help="Number of samples K to draw per measurement",
-)
-argparse.add_argument(
-    "--num_dataset_elements",
-    type=int,
-    default=64,
-    help="Number of elements N to process from dataset",
-)
-argparse.add_argument(
-    "--device", type=str, default="cuda", help="Device to use (cuda or cpu)"
-)
-argparse.add_argument(
-    "--num_timesteps", type=int, default=1000, help="Number of timesteps for sampling"
-)
-
+#argparse.add_argument('--mask_ratio', type=float, default=0.4, help='Fraction of points to mask')
+argparse.add_argument('--lambd', type=float, default=1.0, help='Guidance strength')
+argparse.add_argument('--num_samples', type=int, default=200, help='Number of samples K to draw per measurement')
+argparse.add_argument('--num_dataset_elements', type=int, default=64, help='Number of elements N to process from dataset')    
+argparse.add_argument('--device', type=str, default='cuda', help='Device to use (cuda or cpu)')
+argparse.add_argument('--num_timesteps', type=int, default=1000, help='Number of timesteps for sampling')
+argparse.add_argument('--weak_model', action='store_true', help='Use weak base model (epoch 50) instead of EMA model')
+argparse.add_argument('--untrained_model', action='store_true', help='Use random base model instead of trained model')
 
 def main(args):
 
@@ -59,7 +46,12 @@ def main(args):
     )  # Number of elements N to process from dataset
     n_points = 128
     # Create output directory for logging
-    output_dir = Path(f"results/DPS/lambda_{lambd}")
+    if args.weak_model:
+        output_dir = Path(f"results/DPS/lambda_{lambd}_weak_model")
+    elif args.untrained_model:
+        output_dir = Path(f"results/DPS/lambda_{lambd}_untrained_model")
+    else:
+        output_dir = Path(f"results/DPS/lambda_{lambd}")
     output_dir.mkdir(exist_ok=True, parents=True)
     print(f"Output directory: {output_dir}")
 
@@ -73,12 +65,12 @@ def main(args):
     )
 
     model.to(device)
-    model.load_state_dict(
-        torch.load(
-            "unconditional_model_fno/model_type=C/alpha=1.0/ema_model.pt",
-            weights_only=False,
-        )["shadow"]
-    )
+    if args.weak_model:
+        model.load_state_dict(torch.load("unconditional_model_fno/n_points=128/model_type=C/alpha=1.0/model_epoch_50.pt", weights_only=False))
+    elif args.untrained_model:
+        model.load_state_dict(torch.load("unconditional_model_fno/n_points=128/model_type=raw/alpha=1.0/model_init.pt", weights_only=False))
+    else:
+        model.load_state_dict(torch.load("unconditional_model_fno/n_points=128/model_type=C/alpha=1.0/ema_model.pt", weights_only=False)["shadow"])
     model.to(device)
     model.eval()
 
@@ -86,7 +78,8 @@ def main(args):
     sde = OU(beta_min=config["sde"]["beta_min"], beta_max=config["sde"]["beta_max"])
     power = config["model"]["power"]
     noise_sampler = SpectralNoiseSampler(n=n_points, power=power, device=device)
-    model_type = config["model"]["model_type"]  # "C", "raw", "C_sqrt"
+    model_type = config['model']['model_type']  #"C", "raw", "C_sqrt"
+    print("Model type:", model_type)
     num_timesteps = args.num_timesteps  # number of discretization steps for sampling
 
     score_model = ScoreModel(

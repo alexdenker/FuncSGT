@@ -9,19 +9,28 @@ from noise import SpectralNoiseSampler
 from point_evaluation import Conditioning, PointEvaluationOperator
 from prior import PriorDataset
 from score_model import CondScoreModel
-from sde import OU
-from tqdm import tqdm
+from point_evaluation import PointEvaluationOperator, Conditioning
+
+cond_model_small = True
 
 with open("configs/forward_op.yaml", "r") as f:
     forward_op_config = yaml.safe_load(f)
 
-with open("configs/conditional_model.yaml", "r") as f:
-    config = yaml.safe_load(f)
+if cond_model_small:
+    with open("configs/conditional_model_small.yaml", 'r') as f:
+        config = yaml.safe_load(f)
+else:
+    with open("configs/conditional_model.yaml", 'r') as f:
+        config = yaml.safe_load(f)
 
-power = config["model"]["power"]
-model_type = config["model"]["model_type"]  # "raw", "C_sqrt", "C"
 
-save_path = f"conditional_model/model_type={model_type}/alpha={power}/"
+power = config['model']['power']
+model_type = config['model']['model_type']  # "raw", "C_sqrt", "C"
+
+if cond_model_small:
+    save_path = f"conditional_model_small/model_type={model_type}/alpha={power}/"
+else:
+    save_path = f"conditional_model/model_type={model_type}/alpha={power}/"
 os.makedirs(save_path, exist_ok=True)
 
 save_path_imgs = os.path.join(save_path, "imgs/")

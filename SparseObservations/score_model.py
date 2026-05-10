@@ -1,5 +1,29 @@
 import torch
 
+class ScoreModelFinDim:
+    def __init__(self, model, sde, noise_sampler):
+        self.model = model
+        self.sde = sde
+        self.noise_sampler = noise_sampler  
+
+    def __call__(self, x, t):
+        """
+        x: [batch_size, 1, n_points]
+        t: [batch_size]
+
+        return:
+        score: [batch_size, 1, n_points]
+        x0hat: [batch_size, 1, n_points]
+        """
+        std_factor = self.sde.std_t_scaling(t, x)
+        score = self.model(x, t).unsqueeze(1) / std_factor  # shape: [batch_size, 1, n_points]
+       
+        mean_t_scale = self.sde.mean_t_scaling(t, x)
+
+        x0hat = (x + std_factor**2 * score) / mean_t_scale
+
+        return score, x0hat
+    
 
 class ScoreModel:
     def __init__(self, model, sde, noise_sampler, model_type):

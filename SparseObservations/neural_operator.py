@@ -50,28 +50,22 @@ class SpectralConv1d(nn.Module):
 
         # Complex weights (real + imaginary parts)
         self.scale = 1 / (in_channels * out_channels)
-        self.weights_pos = nn.Parameter(
-            self.scale * torch.randn(in_channels, out_channels, self.modes, 2)
-        )
-        self.weights_neg = nn.Parameter(
-            self.scale * torch.randn(in_channels, out_channels, self.modes, 2)
-        )
-
+        self.weights_pos = nn.Parameter(self.scale * torch.randn(in_channels, out_channels, self.modes, 2))
+        # only consider real-valued signals
+        # self.weights_neg = nn.Parameter(self.scale * torch.randn(in_channels, out_channels, self.modes, 2))
+        
         # Time modulation scaling
         self.scale_A = 1 / emb_dim
         self.A_real_pos = nn.Parameter(
             self.scale_A * torch.randn(self.modes, emb_dim, dtype=torch.float)
         )
         self.A_imag_pos = nn.Parameter(
-            self.scale_A * torch.randn(self.modes, emb_dim, dtype=torch.float)
-        )
-        self.A_real_neg = nn.Parameter(
-            self.scale_A * torch.randn(self.modes, emb_dim, dtype=torch.float)
-        )
-        self.A_imag_neg = nn.Parameter(
-            self.scale_A * torch.randn(self.modes, emb_dim, dtype=torch.float)
-        )
-
+            self.scale_A * torch.randn(self.modes, emb_dim, dtype=torch.float))        
+        # self.A_real_neg = nn.Parameter(
+        #     self.scale_A * torch.randn(self.modes, emb_dim, dtype=torch.float))
+        # self.A_imag_neg = nn.Parameter(
+        #     self.scale_A * torch.randn(self.modes, emb_dim, dtype=torch.float))    
+    
     def compl_mul1d(self, input, weights):
         # input: (batch, in_channel, x), Fourier coeffs (complex)
         # weights: (in_channel, out_channel, x)
@@ -105,11 +99,11 @@ class SpectralConv1d(nn.Module):
         phi_real_pos = torch.einsum("mc,bc->bm", self.A_real_pos, emb)
         phi_imag_pos = torch.einsum("mc,bc->bm", self.A_imag_pos, emb)
         phi_complex_pos = phi_real_pos + 1j * phi_imag_pos  # (B, modes)
-
-        phi_real_neg = torch.einsum("mc,bc->bm", self.A_real_neg, emb)
-        phi_imag_neg = torch.einsum("mc,bc->bm", self.A_imag_neg, emb)
-        phi_complex_neg = phi_real_neg + 1j * phi_imag_neg  # (B, modes)
-
+        
+        # phi_real_neg = torch.einsum('mc,bc->bm', self.A_real_neg, emb)
+        # phi_imag_neg = torch.einsum('mc,bc->bm', self.A_imag_neg, emb)
+        # phi_complex_neg = phi_real_neg + 1j * phi_imag_neg  # (B, modes)
+        
         # Multiply relevant Fourier modes
         out_ft = torch.zeros(
             batchsize,
@@ -127,12 +121,13 @@ class SpectralConv1d(nn.Module):
         )  # unsqueeze for channel dimension
 
         # Apply spectral convolution and time modulation to negative frequencies
-        out_ft[:, :, -self.modes :] = self.compl_mul1d(
-            x_ft[:, :, -self.modes :], self.weights_neg
-        ) * phi_complex_neg.unsqueeze(
-            1
-        )  # unsqueeze for channel dimension
-
+        # out_ft[:, :, -self.modes:] = (
+        #     self.compl_mul1d(
+        #         x_ft[:, :, -self.modes:],
+        #         self.weights_neg
+        #     ) * phi_complex_neg.unsqueeze(1)  # unsqueeze for channel dimension
+        # )
+        
         # Return to physical space
         x_out = torch.fft.irfft(out_ft, n=x_padded.size(-1), norm="ortho")
 

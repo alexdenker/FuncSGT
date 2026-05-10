@@ -13,19 +13,29 @@ from score_model import CondScoreModel
 from sde import OU
 from tqdm import tqdm
 
-with open("configs/forward_op.yaml", "r") as f:
+
+cond_model_small = True 
+
+with open("configs/forward_op.yaml", 'r') as f:
     forward_op_config = yaml.safe_load(f)
 
-with open("configs/conditional_model.yaml", "r") as f:
-    config = yaml.safe_load(f)
+if cond_model_small:
+    with open("configs/conditional_model_small.yaml", 'r') as f:
+        config = yaml.safe_load(f)
+else:
+    with open("configs/conditional_model.yaml", 'r') as f:
+        config = yaml.safe_load(f)
 
 power = config["model"]["power"]
 
 model_type = config["model"]["model_type"]
 
-load_path = f"conditional_model/model_type={model_type}/alpha={power}/"
-
-save_path = Path(f"results/conditional_model/model_type={model_type}/alpha={power}")
+if cond_model_small:
+    load_path = f"conditional_model_small/model_type={model_type}/alpha={power}/"
+    save_path = Path(f"results/conditional_model_small/model_type={model_type}/alpha={power}")
+else:
+    load_path = f"conditional_model/model_type={model_type}/alpha={power}/"
+    save_path = Path(f"results/conditional_model/model_type={model_type}/alpha={power}")
 save_path.mkdir(exist_ok=True, parents=True)
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
